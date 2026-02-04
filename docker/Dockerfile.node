@@ -1,0 +1,57 @@
+# DSV Node Docker Image
+FROM debian:bookworm-slim AS builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    pkg-config \
+    libsodium-dev \
+    libleveldb-dev \
+    libevent-dev \
+    libcjson-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy source
+WORKDIR /build
+COPY CMakeLists.txt .
+COPY common/ common/
+COPY node/ node/
+COPY wallet/ wallet/
+COPY cli/ cli/
+
+# Build
+RUN mkdir build && cd build && \
+    cmake -DCMAKE_BUILD_TYPE=Release .. && \
+    make -j$(nproc)
+
+# Runtime image
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libsodium23 \
+    libleveldb1d \
+    libevent-2.1-7 \
+    libcjson1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd -r -m -d /var/lib/dsv dsv
+
+# Copy binaries
+COPY --from=builder /build/build/dsvd /usr/local/bin/
+COPY --from=builder /build/build/dsv-wallet /usr/local/bin/
+COPY --from=builder /build/build/dsv-cli /usr/local/bin/
+
+# Create data directory
+RUN mkdir -p /var/lib/dsv && chown dsv:dsv /var/lib/dsv
+
+USER dsv
+WORKDIR /var/lib/dsv
+
+EXPOSE 8332 8333
+
+VOLUME ["/var/lib/dsv"]
+
+ENTRYPOINT ["dsvd"]
+CMD ["--datadir=/var/lib/dsv"]
+

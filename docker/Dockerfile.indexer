@@ -1,0 +1,24 @@
+# DSV Explorer Indexer Docker Image
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY explorer/indexer/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application
+COPY explorer/indexer/ .
+
+# Create non-root user
+RUN useradd -r -m indexer && chown -R indexer:indexer /app
+USER indexer
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:9100/metrics')" || exit 1
+
+EXPOSE 9100
+
+CMD ["python", "indexer.py"]
+

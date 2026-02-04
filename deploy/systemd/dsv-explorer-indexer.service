@@ -1,0 +1,31 @@
+[Unit]
+Description=DSV Explorer Indexer
+Documentation=https://github.com/dsv/dsv
+After=network-online.target postgresql.service redis.service dsvd.service
+Wants=network-online.target
+Requires=postgresql.service redis.service
+
+[Service]
+Type=simple
+User=dsv-explorer
+Group=dsv-explorer
+
+WorkingDirectory=/opt/dsv-explorer/indexer
+EnvironmentFile=/etc/dsv-explorer/indexer.env
+ExecStart=/opt/dsv-explorer/venv/bin/python indexer.py
+
+Restart=on-failure
+RestartSec=10
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target
+

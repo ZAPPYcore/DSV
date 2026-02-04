@@ -1,0 +1,141 @@
+version: '3.8'
+
+services:
+  # DSV Node
+  node:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.node
+    container_name: dsv-node
+    restart: unless-stopped
+    ports:
+      - "8332:8332"  # RPC
+      - "8333:8333"  # P2P
+    volumes:
+      - node-data:/var/lib/dsv
+    environment:
+      - RPC_AUTH=${RPC_AUTH:-changeme}
+    command: >
+      --datadir=/var/lib/dsv
+      --rpcauth=${RPC_AUTH:-changeme}
+      --rpcport=8332
+      --port=8333
+    healthcheck:
+      test: ["CMD", "dsv-cli", "--auth=${RPC_AUTH:-changeme}", "getblockcount"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - dsv-network
+
+  # PostgreSQL Database
+  explorer-db:
+    image: postgres:15-alpine
+    container_name: dsv-explorer-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: dsv_explorer
+      POSTGRES_USER: dsv_explorer
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./explorer/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dsv_explorer -d dsv_explorer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dsv-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: dsv-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dsv-network
+
+  # Explorer Indexer
+  explorer-indexer:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.indexer
+    container_name: dsv-explorer-indexer
+    restart: unless-stopped
+    depends_on:
+      node:
+        condition: service_healthy
+      explorer-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DB_HOST: explorer-db
+      DB_PORT: 5432
+      DB_NAME: dsv_explorer
+      DB_USER: dsv_explorer
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RPC_URL: http://node:8332
+      RPC_AUTH: ${RPC_AUTH:-changeme}
+      BATCH_SIZE: 100
+      POLL_INTERVAL: 1
+    networks:
+      - dsv-network
+
+  # Explorer API
+  explorer-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: dsv-explorer-api
+    restart: unless-stopped
+    depends_on:
+      explorer-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DB_DSN: host=explorer-db port=5432 dbname=dsv_explorer user=dsv_explorer password=${DB_PASSWORD:-changeme}
+      REDIS_URL: redis://redis:6379/0
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-changeme}
+      CACHE_TTL: 60
+    ports:
+      - "8080:8080"
+    networks:
+      - dsv-network
+
+  # Explorer Web UI
+  explorer-web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    container_name: dsv-explorer-web
+    restart: unless-stopped
+    depends_on:
+      - explorer-api
+    ports:
+      - "80:80"
+    networks:
+      - dsv-network
+
+volumes:
+  node-data:
+  db-data:
+  redis-data:
+
+networks:
+  dsv-network:
+    driver: bridge
+

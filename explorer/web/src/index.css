@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --dsv-primary: #0da5e9;
+  --dsv-secondary: #082f49;
+  --dsv-accent: #36bffa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  @apply bg-night-950 text-night-100 font-sans antialiased;
+  background-image: 
+    radial-gradient(ellipse at 20% 0%, rgba(13, 165, 233, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(8, 47, 73, 0.3) 0%, transparent 50%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-night-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-night-700 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-night-600;
+}
+
+/* Hash display */
+.hash {
+  @apply font-mono text-sm break-all;
+}
+
+.hash-link {
+  @apply text-dsv-400 hover:text-dsv-300 transition-colors;
+}
+
+/* Card styles */
+.card {
+  @apply bg-night-900/50 backdrop-blur-sm border border-night-800 rounded-xl p-6;
+}
+
+.card-header {
+  @apply text-lg font-semibold text-night-100 mb-4;
+}
+
+/* Table styles */
+.table-container {
+  @apply overflow-x-auto;
+}
+
+.data-table {
+  @apply w-full text-sm;
+}
+
+.data-table th {
+  @apply text-left py-3 px-4 text-night-400 font-medium border-b border-night-800;
+}
+
+.data-table td {
+  @apply py-3 px-4 border-b border-night-800/50;
+}
+
+.data-table tr:hover td {
+  @apply bg-night-800/30;
+}
+
+/* Badge styles */
+.badge {
+  @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+}
+
+.badge-success {
+  @apply bg-emerald-500/20 text-emerald-400;
+}
+
+.badge-pending {
+  @apply bg-amber-500/20 text-amber-400;
+}
+
+.badge-info {
+  @apply bg-dsv-500/20 text-dsv-400;
+}
+
+/* Animations */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  @apply bg-gradient-to-r from-night-800 via-night-700 to-night-800 rounded;
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Glow effect for important elements */
+.glow {
+  box-shadow: 0 0 20px rgba(13, 165, 233, 0.2);
+}
+
+.glow-hover:hover {
+  box-shadow: 0 0 30px rgba(13, 165, 233, 0.3);
+}
+

@@ -76,7 +76,7 @@ make -j$(nproc)
 
 ```bash
 # Initialize data directory
-./dsvd --datadir=/path/to/data --init
+./dsvd --datadir=/path/to/data --<flag_here>
 
 # Start node
 ./dsvd --datadir=/path/to/data
